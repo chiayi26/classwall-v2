@@ -45,12 +45,13 @@
 
 ### 🚀 實戰演練：從 0 到上線
 
-- [Step 1：建立 GitHub Repo](https://www.notion.so/34aad1e31336816409ee2e0bec0dde993) — _本 starter 已建好；學生用 Use this template 取代_
-- [Step 2：Supabase 建資料庫](https://www.notion.so/Step-2-Supabase-34aad1e3133681378631d3d180f37c13) — _跑 `supabase/migrations/0001_init.sql`_
-- [Step 3：Next.js 專案啟動 + Copilot 實戰](https://www.notion.so/34aad1e31336818c8126f69176ea4896) — _本 starter 已 init；學生改用「Copilot 拆解現成程式碼」_
-- [Step 4：串接 Supabase（讀取 + 新增）](https://www.notion.so/34aad1e3133681c9a572dedcc5ad0a52) — _對應 `src/lib/supabase.ts`、`src/app/page.tsx`_
-- [Step 5：Realtime 即時更新 + 按讚功能](https://www.notion.so/34aad1e3133681fda623e60a62b8fa32) — _對應 `src/app/page.tsx` 的 channel subscribe_
-- [Step 6：部署到 Vercel](https://www.notion.so/34aad1e31336815509aacf0dd576d6de7)
+- [Step 1：建立 GitHub Repo](https://www.notion.so/34aad1e3133681649ee2e0bec0dde993) — _本 starter 已建好；學生用 Use this template 取代_
+- [Step 1.5：Git + PR 深入教學](https://www.notion.so/2fdad1e3133680448352c0749d5a579d) — _branch + 完整 PR 流程，Step 4 起會反覆用到_
+- [Step 2：Supabase 建資料庫](https://www.notion.so/34aad1e3133681378631d3d180f37c13) — _跑 `supabase/migrations/0001_init.sql`_
+- [Step 3：部署到 Vercel + 環境變數](https://www.notion.so/34aad1e31336818c8126f69176ea4896) — _前移：第一個小時就拿到上線網址_
+- [Step 4：本地實機驗證 + 第一次 PR](https://www.notion.so/34aad1e3133681c9a572dedcc5ad0a52) — _對應 `npm install` / `.env.local` / 走完整 branch → PR → merge_
+- [Step 5：Realtime 拆解 — 為什麼不用 F5 也會更新？](https://www.notion.so/34aad1e3133681fda623e60a62b8fa32) — _對應 `src/app/page.tsx` 的 channel subscribe + `0001_init.sql` 的 publication_
+- [Step 6：用 Copilot Coding Agent 派工加新功能](https://www.notion.so/34aad1e3133681559aacf0dd576d6de7) — _進階：issue → @copilot → PR → review → merge_
 
 ### 🎓 總結與延伸
 
