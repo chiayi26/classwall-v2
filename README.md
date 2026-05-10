@@ -61,9 +61,9 @@
 
 ## 🚀 Quick Start
 
-對應 Notion 的 **Step 1 → Step 2 → Step 4 → Step 6** 流程，照順序做：
+對應 Notion 的 **Step 1 → Step 2 → Step 3 → Step 4** 流程（雲端優先：先拿到上線網址，再回頭碰本地）。
 
-### 1. 拿到專案（取代 Step 1）
+### 1. 拿到專案（對應 [Step 1](https://www.notion.so/34aad1e3133681649ee2e0bec0dde993)）
 
 選一種：
 
@@ -74,14 +74,9 @@
   cd classwall
   ```
 
-### 2. 安裝 Node 套件（取代 Step 3）
+> Git / PR 流程不熟？先看 [Step 1.5：Git + PR 深入教學](https://www.notion.so/2fdad1e3133680448352c0749d5a579d)，後面會反覆用到。
 
-```bash
-nvm use         # 讀 .nvmrc 切到 Node 20.18+
-npm install
-```
-
-### 3. 建 Supabase 專案（對應 [Step 2](https://www.notion.so/Step-2-Supabase-34aad1e3133681378631d3d180f37c13)）
+### 2. 建 Supabase 專案（對應 [Step 2](https://www.notion.so/34aad1e3133681378631d3d180f37c13)）
 
 到 [supabase.com/dashboard](https://supabase.com/dashboard) → **New project** → 命名 `classwall` → 地區選 **Tokyo / Singapore** → 建立。
 
@@ -98,46 +93,55 @@ npm install
 
 > ⚠️ 千萬不要用 `service_role` key —— 它是後台 admin 權限，不能放前端、不能 commit。
 
-### 4. 設環境變數（對應 [Step 4](https://www.notion.so/34aad1e3133681c9a572dedcc5ad0a52)）
+### 3. 部署到 Vercel + 設環境變數（對應 [Step 3](https://www.notion.so/34aad1e31336818c8126f69176ea4896)）
+
+**這步直接拿到上線網址，不用先碰本地。**
+
+到 [vercel.com/new](https://vercel.com/new) → Import Git Repository → 選你的 `classwall` repo → 在 **Environment Variables** 區塊填上：
+
+- `NEXT_PUBLIC_SUPABASE_URL` = 上一步的 Project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` = 上一步的 anon key
+
+按 **Deploy**，1～2 分鐘後拿到 `https://classwall-<你的名字>.vercel.app`，手機就打得開！
+
+> 之後每次 `git push` 進 main，Vercel 都會**自動重新部署**。
+
+### 4. 本地實機 + 第一次 PR（對應 [Step 4](https://www.notion.so/34aad1e3133681c9a572dedcc5ad0a52)）
+
+本地短暫驗證 + 跑一次完整 `branch → PR → merge → auto-deploy` 工程師日常流程。
 
 ```bash
-cp .env.example .env.local
+nvm use                     # 讀 .nvmrc 切到 Node 20.18+
+npm install                 # 30~60 秒
+cp .env.example .env.local  # 填上 Step 2 拿到的兩個值
+npm run dev                 # → http://localhost:3000
 ```
 
-打開 `.env.local`，把上一步拿到的值填進去：
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOi...
-```
-
-### 5. 跑開發伺服器
-
-```bash
-npm run dev
-```
-
-打開 [http://localhost:3000](http://localhost:3000)，預期看到：
+打開 localhost:3000 應該看到：
 
 - 🎯 ClassWall 漸層標題
 - 發問表單
 - Seed 那筆問題
-- 按 +1 → likes 即時 +1（[Step 5](https://www.notion.so/34aad1e3133681fda623e60a62b8fa32) Realtime UPDATE）
-- 開另一個分頁發問 → 第一個分頁也會即時跳出（Realtime INSERT）
+- 按 +1 → likes 即時 +1（[Step 5](https://www.notion.so/34aad1e3133681fda623e60a62b8fa32) 會拆解為什麼）
+- 開另一個分頁發問 → 第一個分頁即時跳出
 
-### 6. 部署到 Vercel（對應 [Step 6](https://www.notion.so/34aad1e31336815509aacf0dd576d6de7)）
+接著走完整 PR 流程：
 
 ```bash
-git add .
-git commit -m "完成 ClassWall v1"
-git push
+git switch -c feat/my-title
+# 改個標題或顏色
+git add . && git commit -m "feat: 改首頁標題"
+git push -u origin feat/my-title
 ```
 
-到 [vercel.com/new](https://vercel.com/new) → Import Git Repository → 選你的 `classwall` repo → 在 **Environment Variables** 區塊填上 `NEXT_PUBLIC_SUPABASE_URL` 和 `NEXT_PUBLIC_SUPABASE_ANON_KEY` → **Deploy**。
+到 GitHub 開 PR → self-review → squash merge → 等 Vercel auto-deploy → 線上看效果。
 
-完成後會拿到 `https://classwall-你的名字.vercel.app`，全班一起用！
+> 本地裝不起來？走 **GitHub Codespaces**：repo → Code → Codespaces → Create。瀏覽器版 VS Code，環境都裝好了。
 
-> 之後每次 `git push`，Vercel 都會**自動重新部署**。
+### 5. 後面還有什麼？
+
+- [Step 5：Realtime 拆解](https://www.notion.so/34aad1e3133681fda623e60a62b8fa32) — 為什麼網站不用 F5 也會更新？拆 Postgres publication + Realtime Server + 前端 channel
+- [Step 6：Coding Agent 派工](https://www.notion.so/34aad1e3133681559aacf0dd576d6de7) — 寫 issue → `@copilot` → 自動開 PR → review → merge
 
 ---
 
@@ -147,21 +151,21 @@ git push
 src/
 ├── app/
 │   ├── layout.tsx          # 根 layout + metadata
-│   ├── page.tsx            # 首頁：列表 + 表單 + Realtime ← Step 4/5
+│   ├── page.tsx            # 首頁：列表 + 表單 + Realtime channel/subscribe ← Step 5 拆解
 │   └── globals.css         # Tailwind v4 + shadcn 主題
 ├── components/
-│   ├── question-form.tsx   # 發問表單                    ← Step 4
-│   ├── question-card.tsx   # 單張問題卡 + 按讚            ← Step 5
+│   ├── question-form.tsx   # 發問表單（form onSubmit + supabase.insert）
+│   ├── question-card.tsx   # 單張問題卡 + 按讚（無 optimistic update）   ← Step 5 小亮點
 │   └── ui/                 # shadcn 元件 (button, card, textarea)
 ├── lib/
-│   ├── supabase.ts         # Supabase client             ← Step 4
+│   ├── supabase.ts         # Supabase browser client（anon key + RLS）   ← Step 5
 │   └── utils.ts            # cn() helper
 └── types/
     └── database.ts         # Question / Answer types
 
 supabase/
 └── migrations/
-    └── 0001_init.sql       # DB schema + RLS + Realtime + seed ← Step 2
+    └── 0001_init.sql       # DB schema + RLS + Realtime publication + seed ← Step 2 跑 / Step 5 拆解
 ```
 
 ---
