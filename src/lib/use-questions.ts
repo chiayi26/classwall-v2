@@ -7,14 +7,25 @@ import type { Question } from "@/types/database";
 
 const DEFAULT_PAGE_SIZE = 10;
 
+// 統一排序規則：先按讚數降冪，同讚數時新的在前
+function sortByLikes(list: Question[]): Question[] {
+  return [...list].sort((a, b) => {
+    if (b.likes !== a.likes) return b.likes - a.likes;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+}
+
 /**
  * 分頁載入 questions + Realtime 訂閱
  *
  * 策略：
- * - DB 端按 created_at DESC 分頁（穩定，按讚變動不影響）
- * - 顯示時由 page.tsx 在 client 端再依 likes 重排
- * - Realtime INSERT 的新題塞到最前面；UPDATE/DELETE 套用到記憶體 list
+ * - DB 端按 likes DESC, created_at DESC 分頁（高讚的永遠在前面）
+ * - 不再 client 端二次排序，由 DB 與 hook 統一維持順序
+ * - INSERT / UPDATE 後都重新排序，確保位置正確
  * - 用 idSet 去重避免分頁與 realtime 同時拿到同一筆
+ *
+ * 已知代價：高讚題目按讚變動時可能在分頁邊界漂移，
+ * 教學情境量級不大、可接受。
  */
 export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -41,6 +52,7 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
     const { data, error: fetchError } = await supabase
       .from("questions")
       .select("*")
+      .order("likes", { ascending: false })
       .order("created_at", { ascending: false })
       .range(from, to);
 
@@ -59,7 +71,7 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
       return true;
     });
 
-    setQuestions((prev) => [...prev, ...batch]);
+    setQuestions((prev) => sortByLikes([...prev, ...batch]));
     offsetRef.current = from + (data?.length ?? 0);
     setHasMore((data?.length ?? 0) === pageSize);
     setLoading(false);
@@ -67,10 +79,8 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
   }, [pageSize]);
 
   useEffect(() => {
-    // 初次載入第一頁
     loadMore();
 
-    // Realtime 訂閱
     const channel = supabase
       .channel("questions-realtime")
       .on(
@@ -80,8 +90,8 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
           const next = payload.new as Question;
           if (idSetRef.current.has(next.id)) return;
           idSetRef.current.add(next.id);
-          // 新題永遠塞到最前面（不影響 offset，因為它不在 DB range 內）
-          setQuestions((prev) => [next, ...prev]);
+          // 新題依讚數插入正確位置（新題 likes=0 通常在最後一頁，但仍照規則排）
+          setQuestions((prev) => sortByLikes([next, ...prev]));
         }
       )
       .on(
@@ -89,8 +99,9 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
         { event: "UPDATE", schema: "public", table: "questions" },
         (payload) => {
           const next = payload.new as Question;
+          // 按讚變動後重新排序，讓位置即時跟著動
           setQuestions((prev) =>
-            prev.map((q) => (q.id === next.id ? next : q))
+            sortByLikes(prev.map((q) => (q.id === next.id ? next : q)))
           );
         }
       )

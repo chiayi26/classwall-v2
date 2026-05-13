@@ -29,18 +29,7 @@ export default function Home() {
     return () => window.removeEventListener("pointermove", onMove);
   }, []);
 
-  // 顯示用排序：DB 撈時間軸，client 端再依讚數排
-  const sortedQuestions = useMemo(
-    () =>
-      [...questions].sort((a, b) => {
-        if (b.likes !== a.likes) return b.likes - a.likes;
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      }),
-    [questions]
-  );
-
+  // 排序由 DB + useQuestions hook 統一負責，這裡直接渲染
   const totalLikes = useMemo(
     () => questions.reduce((sum, q) => sum + q.likes, 0),
     [questions]
@@ -147,7 +136,7 @@ export default function Home() {
             <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
               讀取失敗：{error}
             </div>
-          ) : sortedQuestions.length === 0 ? (
+          ) : questions.length === 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -163,7 +152,7 @@ export default function Home() {
           ) : (
             <div className="flex flex-col gap-3">
               <AnimatePresence mode="popLayout" initial={false}>
-                {sortedQuestions.map((question) => (
+                {questions.map((question) => (
                   <QuestionCard key={question.id} question={question} />
                 ))}
               </AnimatePresence>
