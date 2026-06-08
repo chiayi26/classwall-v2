@@ -25,9 +25,11 @@ description: "新增一個雙邊（Copilot + Claude Code）通用的 skill / 規
    # <Title>
 
    ## 規則
+
    ...
 
    ## 範例
+
    ❌ 錯誤：...
    ✅ 正確：...
    ```

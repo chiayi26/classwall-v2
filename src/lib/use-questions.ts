@@ -7,12 +7,28 @@ import type { Question } from "@/types/database";
 
 const DEFAULT_PAGE_SIZE = 10;
 
+type SortMode = "likes" | "recent";
+
 // 統一排序規則：先按讚數降冪，同讚數時新的在前
 function sortByLikes(list: Question[]): Question[] {
   return [...list].sort((a, b) => {
     if (b.likes !== a.likes) return b.likes - a.likes;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
+}
+
+// 最新排序：先按時間降冪，同時間則按讚數降冪
+function sortByRecent(list: Question[]): Question[] {
+  return [...list].sort((a, b) => {
+    const timeDiff =
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (timeDiff !== 0) return timeDiff;
+    return b.likes - a.likes;
+  });
+}
+
+function applySort(list: Question[], sortMode: SortMode) {
+  return sortMode === "likes" ? sortByLikes(list) : sortByRecent(list);
 }
 
 /**
@@ -27,7 +43,10 @@ function sortByLikes(list: Question[]): Question[] {
  * 已知代價：高讚題目按讚變動時可能在分頁邊界漂移，
  * 教學情境量級不大、可接受。
  */
-export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
+export function useQuestions(
+  pageSize = DEFAULT_PAGE_SIZE,
+  sortMode: SortMode = "likes"
+) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -43,18 +62,30 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
     inFlightRef.current = true;
 
     const isFirst = offsetRef.current === 0;
-    if (isFirst) setLoading(true);
-    else setLoadingMore(true);
+    if (isFirst) {
+      setQuestions([]);
+      setLoading(true);
+      setHasMore(true);
+      setError(null);
+    } else {
+      setLoadingMore(true);
+    }
 
     const from = offsetRef.current;
     const to = from + pageSize - 1;
 
-    const { data, error: fetchError } = await supabase
-      .from("questions")
-      .select("*")
-      .order("likes", { ascending: false })
-      .order("created_at", { ascending: false })
-      .range(from, to);
+    const query = supabase.from("questions").select("*");
+    if (sortMode === "likes") {
+      query.order("likes", { ascending: false }).order("created_at", {
+        ascending: false,
+      });
+    } else {
+      query.order("created_at", { ascending: false }).order("likes", {
+        ascending: false,
+      });
+    }
+
+    const { data, error: fetchError } = await query.range(from, to);
 
     inFlightRef.current = false;
 
@@ -71,14 +102,16 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
       return true;
     });
 
-    setQuestions((prev) => sortByLikes([...prev, ...batch]));
+    setQuestions((prev) => applySort([...prev, ...batch], sortMode));
     offsetRef.current = from + (data?.length ?? 0);
     setHasMore((data?.length ?? 0) === pageSize);
     setLoading(false);
     setLoadingMore(false);
-  }, [pageSize]);
+  }, [pageSize, sortMode]);
 
   useEffect(() => {
+    offsetRef.current = 0;
+    idSetRef.current = new Set();
     loadMore();
 
     const channel = supabase
@@ -90,8 +123,7 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
           const next = payload.new as Question;
           if (idSetRef.current.has(next.id)) return;
           idSetRef.current.add(next.id);
-          // 新題依讚數插入正確位置（新題 likes=0 通常在最後一頁，但仍照規則排）
-          setQuestions((prev) => sortByLikes([next, ...prev]));
+          setQuestions((prev) => applySort([next, ...prev], sortMode));
         }
       )
       .on(
@@ -99,9 +131,11 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
         { event: "UPDATE", schema: "public", table: "questions" },
         (payload) => {
           const next = payload.new as Question;
-          // 按讚變動後重新排序，讓位置即時跟著動
           setQuestions((prev) =>
-            sortByLikes(prev.map((q) => (q.id === next.id ? next : q)))
+            applySort(
+              prev.map((q) => (q.id === next.id ? next : q)),
+              sortMode
+            )
           );
         }
       )
@@ -119,9 +153,7 @@ export function useQuestions(pageSize = DEFAULT_PAGE_SIZE) {
     return () => {
       supabase.removeChannel(channel);
     };
-    // 只在 mount 時跑一次；loadMore 因為 useCallback 穩定
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadMore, sortMode]);
 
   return { questions, loading, loadingMore, hasMore, error, loadMore };
 }
