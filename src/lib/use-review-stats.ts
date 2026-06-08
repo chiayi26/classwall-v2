@@ -21,7 +21,7 @@ export function useReviewStats() {
 
     async function load() {
       const { data, error: fetchError } = await supabase
-        .from<Review>("reviews")
+        .from("reviews")
         .select("restaurant_id,rating");
 
       if (cancelled) return;
